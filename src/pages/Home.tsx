@@ -67,7 +67,7 @@ export const Home: React.FC = () => {
 
   // Opportunities state
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [totalDatabaseCount, setTotalDatabaseCount] = useState<number>(24);
+  const [totalDatabaseCount, setTotalDatabaseCount] = useState<number>(112);
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

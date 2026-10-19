@@ -291,6 +291,15 @@ export const Admin: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <a
+            href="/opportunities.json"
+            download="scholarlens_opportunities_112.json"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 text-xs font-semibold rounded hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors shadow-xs"
+            title="Download complete 112 opportunities database in JSON format"
+          >
+            <span>Export JSON ({opportunities.length})</span>
+          </a>
+
           {!showForm && (
             <button
               type="button"
