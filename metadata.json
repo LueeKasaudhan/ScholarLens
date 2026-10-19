@@ -1,0 +1,8 @@
+{
+  "name": "Career Sync",
+  "description": "A curated search tool surfacing lesser-known (long-tail) scholarships and fellowships for Indian students pursuing technical Master's degrees abroad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
