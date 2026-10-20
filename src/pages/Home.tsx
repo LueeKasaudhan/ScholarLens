@@ -8,16 +8,20 @@ import {
   AlertOctagon,
   ArrowUpDown,
   Search,
-  Sparkles
+  Sparkles,
+  BarChart2,
+  Binary
 } from 'lucide-react';
 import {
   searchOpportunities,
   rankBySemanticMatch,
+  getSemanticEngineStats,
   Opportunity,
   SearchFilters,
   RankedResult,
   DegreeLevel,
-  FundingType
+  FundingType,
+  SemanticEngineStats
 } from '../api';
 import { SearchBar } from '../components/SearchBar';
 import { FilterSidebar } from '../components/FilterSidebar';
@@ -25,6 +29,9 @@ import { FilterChips } from '../components/FilterChips';
 import { SemanticMatchPanel } from '../components/SemanticMatchPanel';
 import { OpportunityCard } from '../components/OpportunityCard';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { VectorDistributionModal } from '../components/VectorDistributionModal';
+import { IndusMotionHero } from '../components/IndusMotionHero';
+import { AmbienceMood } from '../components/IndusMotionGraphics';
 import { useDebounce } from '../hooks/useDebounce';
 
 export const Home: React.FC = () => {
@@ -67,15 +74,65 @@ export const Home: React.FC = () => {
 
   // Opportunities state
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [allCatalogOpportunities, setAllCatalogOpportunities] = useState<Opportunity[]>([]);
   const [totalDatabaseCount, setTotalDatabaseCount] = useState<number>(112);
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Semantic matching state
-  const [backgroundText, setBackgroundText] = useState<string>('');
-  const [similarityMap, setSimilarityMap] = useState<Map<string, number>>(new Map());
+  const [backgroundText, setBackgroundText] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('scholar_lens_profile') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [rankedResultsMap, setRankedResultsMap] = useState<Map<string, RankedResult>>(new Map());
+  const [allRankedResults, setAllRankedResults] = useState<RankedResult[]>([]);
+  const [semanticStats, setSemanticStats] = useState<SemanticEngineStats | null>(null);
+  const [minThreshold, setMinThreshold] = useState<number>(0);
   const [isRankingLoading, setIsRankingLoading] = useState(false);
+  const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
+
+  // Ambience Mood state (Golden Hour, Sunset Twilight, Starlit Dusk)
+  const [currentMood, setCurrentMood] = useState<AmbienceMood>(() => {
+    try {
+      return (localStorage.getItem('scholarlens_ambience_mood') as AmbienceMood) || 'golden-hour';
+    } catch {
+      return 'golden-hour';
+    }
+  });
+
+  const handleMoodChange = (newMood: AmbienceMood) => {
+    setCurrentMood(newMood);
+    try {
+      localStorage.setItem('scholarlens_ambience_mood', newMood);
+    } catch {
+      // Storage might be restricted
+    }
+  };
+
+  const handleScrollToSemantic = () => {
+    const el = document.getElementById('semantic-matcher-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleScrollToCatalog = () => {
+    const el = document.getElementById('catalog-results-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Listen for top bar "Waves" click event to open vector distribution modal
+  useEffect(() => {
+    const handleOpenModal = () => setIsDistributionModalOpen(true);
+    window.addEventListener('open-vector-modal', handleOpenModal);
+    return () => window.removeEventListener('open-vector-modal', handleOpenModal);
+  }, []);
 
   // Synchronize debounced query input with filters
   useEffect(() => {
@@ -107,44 +164,48 @@ export const Home: React.FC = () => {
     setSearchParams(params, { replace: true });
   }, [filters, setSearchParams]);
 
-  // Fetch opportunities whenever filters change (excluding relevance sort override)
+  // Fetch opportunities whenever filters change
   const fetchOpportunities = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Fetch filtered candidate set
       const results = await searchOpportunities(filters);
       setOpportunities(results);
 
-      // Extract unique countries from unfiltered source when available or current results
       const countries = Array.from(new Set(results.map((r) => r.host_country))).sort();
       if (countries.length > 0) {
         setAvailableCountries((prev) => Array.from(new Set([...prev, ...countries])).sort());
       }
 
-      // 2. If semantic matching background text is active, re-rank this filtered subset
-      // CRITICAL PIPELINE RULE: Filters run first, then semantic ranking re-ranks the filtered subset
+      // If semantic matching is active, re-rank
       if (backgroundText.trim() && results.length > 0) {
         setIsRankingLoading(true);
+        const startTime = performance.now();
         const candidateIds = results.map((r) => r.id);
         const ranked: RankedResult[] = await rankBySemanticMatch(backgroundText, candidateIds);
+        const duration = performance.now() - startTime;
 
-        const scoreMap = new Map<string, number>();
-        ranked.forEach((item) => scoreMap.set(item.id, item.similarity));
-        setSimilarityMap(scoreMap);
+        const resMap = new Map<string, RankedResult>();
+        ranked.forEach((item) => resMap.set(item.id, item));
+        setRankedResultsMap(resMap);
+        setAllRankedResults(ranked);
 
-        // If sorted by relevance, order directly by similarity score
+        const stats = getSemanticEngineStats(backgroundText, results, ranked, duration);
+        setSemanticStats(stats);
+
         if (filters.sort_by === 'relevance') {
           results.sort((a, b) => {
-            const scoreA = scoreMap.get(a.id) ?? 0;
-            const scoreB = scoreMap.get(b.id) ?? 0;
+            const scoreA = resMap.get(a.id)?.similarity ?? 0;
+            const scoreB = resMap.get(b.id)?.similarity ?? 0;
             return scoreB - scoreA;
           });
           setOpportunities([...results]);
         }
         setIsRankingLoading(false);
       } else if (!backgroundText.trim()) {
-        setSimilarityMap(new Map());
+        setRankedResultsMap(new Map());
+        setAllRankedResults([]);
+        setSemanticStats(null);
       }
     } catch (err: unknown) {
       console.error(err);
@@ -154,11 +215,12 @@ export const Home: React.FC = () => {
     }
   }, [filters, backgroundText]);
 
-  // Initial load to discover all available countries from total pool
+  // Initial load to discover all available opportunities & countries from total pool
   useEffect(() => {
     let isMounted = true;
     searchOpportunities({ long_tail_only: false }).then((all) => {
       if (isMounted) {
+        setAllCatalogOpportunities(all);
         setTotalDatabaseCount(all.length);
         const countries = Array.from(new Set(all.map((o) => o.host_country))).sort();
         setAvailableCountries(countries);
@@ -173,28 +235,55 @@ export const Home: React.FC = () => {
     fetchOpportunities();
   }, [fetchOpportunities]);
 
-  // Handle semantic match submit
-  const handleSemanticMatch = async (text: string) => {
+  // Handle semantic match submit with options
+  const handleSemanticMatch = async (
+    text: string,
+    options?: { rankAllDatabase?: boolean; minThreshold?: number }
+  ) => {
     setBackgroundText(text);
+    try {
+      sessionStorage.setItem('scholar_lens_profile', text);
+    } catch {
+      // ignore storage error
+    }
+
+    if (options?.minThreshold !== undefined) {
+      setMinThreshold(options.minThreshold);
+    }
+
     setIsRankingLoading(true);
 
     try {
-      const candidateIds = opportunities.map((o) => o.id);
-      const ranked = await rankBySemanticMatch(text, candidateIds);
-      const scoreMap = new Map<string, number>();
-      ranked.forEach((item) => scoreMap.set(item.id, item.similarity));
-      setSimilarityMap(scoreMap);
+      const startTime = performance.now();
+      let targetList: Opportunity[];
+      if (options?.rankAllDatabase && allCatalogOpportunities.length > 0) {
+        targetList = allCatalogOpportunities;
+      } else {
+        targetList = await searchOpportunities({ ...filters, sort_by: 'relevance' });
+      }
 
-      // Automatically switch to relevance sort
-      setFilters((prev) => ({ ...prev, sort_by: 'relevance' }));
+      const candidateIds = targetList.map((o) => o.id);
+      const ranked: RankedResult[] = await rankBySemanticMatch(text, candidateIds);
+      const duration = performance.now() - startTime;
 
-      // Re-order active opportunities by similarity
-      const sorted = [...opportunities].sort((a, b) => {
-        const scoreA = scoreMap.get(a.id) ?? 0;
-        const scoreB = scoreMap.get(b.id) ?? 0;
+      const resMap = new Map<string, RankedResult>();
+      ranked.forEach((item) => resMap.set(item.id, item));
+      setRankedResultsMap(resMap);
+      setAllRankedResults(ranked);
+
+      const stats = getSemanticEngineStats(text, targetList, ranked, duration);
+      setSemanticStats(stats);
+
+      // Order candidates strictly by cosine similarity
+      const sorted = [...targetList].sort((a, b) => {
+        const scoreA = resMap.get(a.id)?.similarity ?? 0;
+        const scoreB = resMap.get(b.id)?.similarity ?? 0;
         return scoreB - scoreA;
       });
       setOpportunities(sorted);
+
+      // Set sort to relevance
+      setFilters((prev) => ({ ...prev, sort_by: 'relevance' }));
     } catch (e) {
       console.error('Semantic match error', e);
     } finally {
@@ -204,7 +293,15 @@ export const Home: React.FC = () => {
 
   const handleClearSemanticMatch = () => {
     setBackgroundText('');
-    setSimilarityMap(new Map());
+    try {
+      sessionStorage.removeItem('scholar_lens_profile');
+    } catch {
+      // ignore
+    }
+    setRankedResultsMap(new Map());
+    setAllRankedResults([]);
+    setSemanticStats(null);
+    setMinThreshold(0);
     setFilters((prev) => ({ ...prev, sort_by: 'deadline' }));
   };
 
@@ -224,23 +321,39 @@ export const Home: React.FC = () => {
     handleClearSemanticMatch();
   };
 
-  const isSemanticActive = Boolean(backgroundText.trim() && similarityMap.size > 0);
+  const isSemanticActive = Boolean(backgroundText.trim() && rankedResultsMap.size > 0);
+
+  // Filter displayed opportunities by minThreshold if active
+  const displayedOpportunities = useMemo(() => {
+    if (!isSemanticActive || minThreshold <= 0) {
+      return opportunities;
+    }
+    return opportunities.filter((opp) => {
+      const sim = rankedResultsMap.get(opp.id)?.similarity ?? 0;
+      return sim >= minThreshold;
+    });
+  }, [opportunities, isSemanticActive, minThreshold, rankedResultsMap]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Hero / Page Headline with Editorial Polish */}
-      <div className="mb-6 sm:mb-8 text-center sm:text-left">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-semibold mb-3 border border-emerald-200 dark:border-emerald-800">
-          <Sparkles className="w-3.5 h-3.5" />
-          The Long-Tail Discovery Engine
-        </div>
-        <h1 className="font-serif-title text-3xl sm:text-4xl md:text-5xl text-stone-900 dark:text-stone-50 tracking-tight leading-tight">
-          Beyond the Famous Ten.
+      {/* Epoch-style Editorial Headline */}
+      <div className="mx-auto mb-8 max-w-2xl text-center">
+        <h1 className="font-serif-title font-normal text-stone-900 dark:text-stone-100 text-3xl md:text-4xl leading-tight tracking-tight">
+          The Opportunity Library
         </h1>
-        <p className="mt-2 text-sm sm:text-base text-stone-600 dark:text-stone-300 max-w-2xl leading-relaxed">
-          Skip the saturated 1% marquee grants. Discover legitimate, high-funding European &amp; Asian university awards, research chairs, and lab stipends for Indian engineering &amp; CS applicants.
+        <p className="mx-auto mt-2 max-w-xl text-[13.5px] text-stone-500 dark:text-stone-400 leading-normal font-sans">
+          Curated long-tail awards, university fellowships, and research chairs for Indian tech graduates. Matched mathematically, thread by thread.
         </p>
       </div>
+
+      {/* Indus Motion Graphics & Slice-of-Life Anime Warmth Hero */}
+      <IndusMotionHero
+        totalCount={totalDatabaseCount}
+        onExploreClick={handleScrollToCatalog}
+        onSemanticClick={handleScrollToSemantic}
+        currentMood={currentMood}
+        onMoodChange={handleMoodChange}
+      />
 
       {/* Main Search & Control Bar */}
       <div className="mb-4">
@@ -251,18 +364,23 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Semantic Matching Collapsible Bar */}
-      <div className="mb-6">
+      <div id="semantic-matcher-section" className="mb-6 scroll-mt-20">
         <SemanticMatchPanel
           onMatch={handleSemanticMatch}
           onClear={handleClearSemanticMatch}
           isMatchingActive={isSemanticActive}
           isRankingLoading={isRankingLoading}
           candidateCount={opportunities.length}
+          totalDatabaseCount={totalDatabaseCount}
+          stats={semanticStats}
+          minThreshold={minThreshold}
+          onThresholdChange={setMinThreshold}
+          onOpenDistributionModal={() => setIsDistributionModalOpen(true)}
         />
       </div>
 
       {/* Layout Grid: Left Sidebar + Right Results */}
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+      <div id="catalog-results-section" className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start scroll-mt-20">
         {/* Left Filter Sidebar */}
         <FilterSidebar
           filters={filters}
@@ -284,6 +402,23 @@ export const Home: React.FC = () => {
             />
           </div>
 
+          {/* Active Semantic Filter Banner */}
+          {isSemanticActive && (
+            <div className="mb-4 p-3 rounded-lg bg-stone-100/70 dark:bg-stone-800/40 border border-dashed border-stone-300 dark:border-stone-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-stone-900 dark:text-stone-100">
+                <Sparkles className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
+                <span className="font-semibold font-mono text-[11px] uppercase tracking-wider">
+                  Profile Match Active:
+                </span>
+                <span className="text-stone-600 dark:text-stone-300">
+                  {minThreshold > 0
+                    ? `Showing ${displayedOpportunities.length} awards with ≥${Math.round(minThreshold * 100)}% min match`
+                    : `Ranking ${displayedOpportunities.length} opportunities against your profile`}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Results Header: Count & Sorting & View Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b border-stone-200 dark:border-stone-800">
             {/* Live Count */}
@@ -293,7 +428,7 @@ export const Home: React.FC = () => {
               aria-atomic="true"
             >
               <span className="font-bold text-stone-900 dark:text-stone-100">
-                {isLoading ? 'Updating...' : `Showing ${opportunities.length} of ${totalDatabaseCount}`}
+                {isLoading ? 'Updating...' : `Showing ${displayedOpportunities.length} of ${totalDatabaseCount}`}
               </span>
               <span>opportunities</span>
               {filters.long_tail_only ?? true ? (
@@ -333,7 +468,7 @@ export const Home: React.FC = () => {
                   <option value="deadline">Sort: Deadline (Soonest)</option>
                   <option value="recently_verified">Sort: Recently Verified</option>
                   <option value="relevance" disabled={!isSemanticActive}>
-                    Sort: Relevance {isSemanticActive ? '(Semantic)' : '(Paste profile first)'}
+                    Sort: Relevance {isSemanticActive ? '(Best Match)' : '(Set profile first)'}
                   </option>
                 </select>
               </div>
@@ -391,17 +526,21 @@ export const Home: React.FC = () => {
           )}
 
           {/* Empty State with Suggestions */}
-          {!isLoading && !error && opportunities.length === 0 && (
+          {!isLoading && !error && displayedOpportunities.length === 0 && (
             <div className="p-10 rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 text-center space-y-4 max-w-lg mx-auto">
               <div className="w-12 h-12 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-400 flex items-center justify-center mx-auto">
                 <Search className="w-6 h-6" />
               </div>
               <div>
                 <h3 className="font-bold text-stone-900 dark:text-stone-100 text-lg">
-                  No opportunities match your current filters
+                  {minThreshold > 0
+                    ? `No opportunities meet the ${Math.round(minThreshold * 100)}% Cosine Match threshold`
+                    : 'No opportunities match your current filters'}
                 </h3>
                 <p className="text-stone-500 dark:text-stone-400 text-xs sm:text-sm mt-1 leading-relaxed">
-                  Try broadening your search criteria. Many long-tail awards span multiple interdisciplinary departments.
+                  {minThreshold > 0
+                    ? 'Try lowering the minimum cosine threshold to "All" or "≥40%" to see programs with related domain keywords.'
+                    : 'Try broadening your search criteria. Many long-tail awards span multiple interdisciplinary departments.'}
                 </p>
               </div>
 
@@ -411,6 +550,9 @@ export const Home: React.FC = () => {
                   Suggested adjustments:
                 </span>
                 <ul className="list-disc list-inside space-y-1 text-stone-600 dark:text-stone-400">
+                  {minThreshold > 0 && (
+                    <li>Set the Cosine match threshold back to &quot;All&quot;</li>
+                  )}
                   {filters.host_countries && filters.host_countries.length > 0 && (
                     <li>Try removing the country filter to compare awards across Europe and Asia</li>
                   )}
@@ -420,7 +562,6 @@ export const Home: React.FC = () => {
                   {filters.deadline_before && (
                     <li>Clear the deadline-before constraint to see spring or rolling intake cycles</li>
                   )}
-                  <li>Remove narrow technical sub-disciplines or free-text keywords</li>
                 </ul>
               </div>
 
@@ -436,7 +577,7 @@ export const Home: React.FC = () => {
           )}
 
           {/* Results Grid / List */}
-          {!isLoading && !error && opportunities.length > 0 && (
+          {!isLoading && !error && displayedOpportunities.length > 0 && (
             <div
               className={
                 viewMode === 'grid'
@@ -444,11 +585,12 @@ export const Home: React.FC = () => {
                   : 'space-y-3'
               }
             >
-              {opportunities.map((opp) => (
+              {displayedOpportunities.map((opp) => (
                 <OpportunityCard
                   key={opp.id}
                   opportunity={opp}
-                  similarityScore={similarityMap.get(opp.id)}
+                  similarityScore={rankedResultsMap.get(opp.id)?.similarity}
+                  semanticResult={rankedResultsMap.get(opp.id)}
                   viewMode={viewMode}
                   searchQueryParam={searchParams.toString()}
                 />
@@ -457,6 +599,16 @@ export const Home: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Vector Space Inspection Modal */}
+      <VectorDistributionModal
+        isOpen={isDistributionModalOpen}
+        onClose={() => setIsDistributionModalOpen(false)}
+        results={allRankedResults}
+        opportunities={opportunities.length > 0 ? opportunities : allCatalogOpportunities}
+        stats={semanticStats}
+        backgroundText={backgroundText}
+      />
     </div>
   );
 };

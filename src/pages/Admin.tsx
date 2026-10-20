@@ -274,11 +274,11 @@ export const Admin: React.FC = () => {
   // --- Authenticated Admin Panel ---
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans">
-      {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-stone-200 dark:border-stone-800">
+      {/* Header bar in Epoch style */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-dashed border-stone-300 dark:border-stone-800">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
+            <h1 className="text-2xl font-normal font-serif-title text-stone-900 dark:text-stone-100">
               Opportunity Management
             </h1>
             <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-800">

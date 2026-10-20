@@ -5,45 +5,80 @@ import {
   ChevronUp,
   Brain,
   XCircle,
-  AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Sliders,
+  Binary,
+  Cpu,
+  BarChart3
 } from 'lucide-react';
+import { SemanticEngineStats } from '../api/types';
 
 interface SemanticMatchPanelProps {
-  onMatch: (backgroundText: string) => void;
+  onMatch: (backgroundText: string, options?: { rankAllDatabase?: boolean; minThreshold?: number }) => void;
   onClear: () => void;
   isMatchingActive: boolean;
   isRankingLoading: boolean;
   candidateCount: number;
+  totalDatabaseCount: number;
+  stats?: SemanticEngineStats | null;
+  minThreshold: number;
+  onThresholdChange: (threshold: number) => void;
+  onOpenDistributionModal?: () => void;
 }
 
-/**
- * TODO: Known open product design question regarding semantic ranking on small candidate subsets:
- * When candidate set < 5, ranking precision diminishes and scores may feel artificial.
- * Currently handled by showing a non-blocking informative banner advising users to loosen filters.
- */
 export function shouldShowLowCandidateSubsetWarning(count: number, isMatchRequested: boolean): boolean {
   return isMatchRequested && count > 0 && count < 5;
 }
 
-const SAMPLE_BACKGROUND =
-  "Final-year B.Tech in Computer Engineering from Pune University (8.3 CGPA). Completed projects in embedded Linux and real-time RTOS sensor networks. Proficient in C, C++, and Python with coursework in computer architecture, distributed systems, and basic deep learning. Interested in IoT or robotics systems research.";
+export const SAMPLE_PROFILES = [
+  {
+    label: 'Robotics & Embedded Systems',
+    desc: 'B.Tech Pune Univ (8.4 CGPA) • C++, RTOS, ROS & microcontrollers',
+    text: 'Final-year B.Tech in Computer & Electronics Engineering from Pune University (8.4 CGPA). Completed projects in embedded Linux and real-time RTOS sensor networks. Proficient in C, C++, and Python with coursework in computer architecture, distributed systems, and robotics control systems. Seeking research opportunities in autonomous systems and IoT sensors.'
+  },
+  {
+    label: 'Artificial Intelligence & Vision',
+    desc: 'B.Tech IIT Delhi (8.9 CGPA) • PyTorch, Transformer models & CV',
+    text: 'B.Tech in Computer Science from IIT Delhi (8.9 CGPA). Research background in deep learning, computer vision, and transformer models. Published a paper on unsupervised representation learning. Proficient in PyTorch, Python, and CUDA with interest in multimodal AI, neural graphics, and European lab fellowships.'
+  },
+  {
+    label: 'VLSI & Chip Design',
+    desc: 'B.E. BITS Pilani (8.3 CGPA) • Verilog, FPGA & Digital ICs',
+    text: 'Electronics and Instrumentation graduate from BITS Pilani (8.3 CGPA). Specialized in digital VLSI design, FPGA prototyping, and ASIC verification using SystemVerilog and Synopsys EDA tools. Interested in semiconductor research chairs and microelectronics masters programs in Germany or Belgium.'
+  },
+  {
+    label: 'Bioinformatics & Genomics',
+    desc: 'B.Tech Biotech (8.2 CGPA) • Computational biology & NGS data',
+    text: 'B.Tech in Biotechnology and Bioinformatics from Anna University (8.2 CGPA). Practical experience analyzing next-generation sequencing (NGS) data with Python, R, and Nextflow. Completed internship in cancer genomics. Seeking funded technical masters in computational biology or biomedical data science.'
+  },
+  {
+    label: 'Cybersecurity & Systems',
+    desc: 'B.Tech NIT Trichy (8.6 CGPA) • Rust, Cryptography & Networks',
+    text: 'Computer Science graduate from NIT Trichy (8.6 CGPA). Strong background in network security, applied cryptography, and systems programming in Rust and Go. Active participant in CTF competitions with knowledge of zero-knowledge proofs and cloud infrastructure security.'
+  }
+];
 
 export const SemanticMatchPanel: React.FC<SemanticMatchPanelProps> = ({
   onMatch,
   onClear,
   isMatchingActive,
   isRankingLoading,
-  candidateCount
+  candidateCount,
+  totalDatabaseCount,
+  stats,
+  minThreshold,
+  onThresholdChange,
+  onOpenDistributionModal
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(isMatchingActive);
   const [text, setText] = useState('');
+  const [rankAllDatabase, setRankAllDatabase] = useState(false);
   const maxChars = 2000;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!text.trim()) return;
-    onMatch(text.trim());
+    onMatch(text.trim(), { rankAllDatabase, minThreshold });
   };
 
   const handleClear = () => {
@@ -51,83 +86,82 @@ export const SemanticMatchPanel: React.FC<SemanticMatchPanelProps> = ({
     onClear();
   };
 
-  const handleInsertSample = () => {
-    setText(SAMPLE_BACKGROUND);
+  const handleSelectPreset = (presetText: string) => {
+    setText(presetText);
+    setIsOpen(true);
   };
 
-  const showLowCandidateWarning = shouldShowLowCandidateSubsetWarning(
-    candidateCount,
-    isMatchingActive
-  );
-
   return (
-    <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-100/60 dark:bg-stone-900/40 overflow-hidden transition-all duration-200">
+    <div className="rounded-xl border-[1.5px] border-dashed border-stone-300 dark:border-stone-800 bg-[#faf8f5]/90 dark:bg-stone-900/60 overflow-hidden transition-all duration-200 shadow-2xs">
       {/* Header bar / Toggle */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 sm:px-5 flex items-center justify-between hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors text-left"
+        className="w-full px-4 py-3 sm:px-5 flex items-center justify-between hover:bg-stone-100/60 dark:hover:bg-stone-800/60 transition-colors text-left cursor-pointer"
         aria-expanded={isOpen}
       >
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-700/10 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 flex items-center justify-center shrink-0">
+          <div className="size-[32px] border border-dashed border-stone-300 dark:border-stone-700 bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900 flex items-center justify-center shrink-0">
             <Brain className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-sm sm:text-base text-stone-900 dark:text-stone-100">
-                Match me to my background
+                Semantic Studio
               </span>
               {isMatchingActive && (
-                <span className="px-2 py-0.5 text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded-full border border-emerald-300 dark:border-emerald-800">
-                  Active Match
+                <span className="px-2 py-0.5 text-[10px] font-mono font-semibold bg-stone-900 text-white dark:bg-white dark:text-stone-950">
+                  ACTIVE
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500 dark:text-stone-400 hidden sm:block">
-              Paste your degree, thesis topic, or tech stack to re-rank filtered awards by semantic alignment.
+            <p className="text-xs text-stone-500 dark:text-stone-400 hidden sm:block font-sans">
+              Paste your degree, research interests, or tech stack. Vectorizes your background and matches your profile against all catalog opportunities.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-stone-500">
-          <span className="text-xs font-medium hidden md:inline">
-            {isOpen ? 'Collapse' : isMatchingActive ? 'Edit profile' : 'Open matcher'}
+          <span className="text-xs font-mono hidden md:inline">
+            {isOpen ? 'Collapse' : isMatchingActive ? 'Adjust Profile' : 'Open Studio'}
           </span>
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
 
-      {/* Low Candidate Subset Warning (Non-blocking) */}
-      {showLowCandidateWarning && (
-        <div className="mx-4 sm:mx-5 mb-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900 rounded-lg flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200">
-          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <span>
-            Few results match your filters ({candidateCount} remaining), so ranking is less informative. Consider loosening filters for stronger semantic comparison.
-          </span>
-        </div>
-      )}
-
       {/* Expanded Body */}
       {isOpen && (
-        <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-1 border-t border-stone-200 dark:border-stone-800 space-y-3">
+        <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-stone-200 dark:border-stone-800 space-y-4">
+          {/* Preset Profile Pills */}
+          <div>
+            <div className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 font-mono">
+              <Cpu className="w-3.5 h-3.5" />
+              <span>Click a sample student profile:</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SAMPLE_PROFILES.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => handleSelectPreset(p.text)}
+                  className="px-2.5 py-1 text-xs border border-dashed border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-700 dark:text-stone-300 hover:border-stone-900 dark:hover:border-stone-100 hover:text-stone-900 dark:hover:text-stone-100 transition-colors text-left font-medium shadow-2xs cursor-pointer font-sans"
+                  title={p.desc}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
-              <span className="flex items-center gap-1 font-medium text-stone-700 dark:text-stone-300">
+              <span className="flex items-center gap-1 font-medium text-stone-700 dark:text-stone-300 font-sans">
                 <HelpCircle className="w-3.5 h-3.5" />
-                Paste text only — we don't parse CVs or PDFs
+                Input text directly (SOP excerpt, resume summary, thesis abstract)
               </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleInsertSample}
-                  className="text-emerald-700 dark:text-emerald-400 hover:underline font-medium"
-                >
-                  Insert sample profile
-                </button>
-                <span>•</span>
+              <div className="flex items-center gap-2 font-mono">
                 <span className={text.length > maxChars ? 'text-rose-600 font-bold' : ''}>
-                  {text.length} / {maxChars}
+                  {text.length} / {maxChars} chars
                 </span>
               </div>
             </div>
@@ -136,38 +170,104 @@ export const SemanticMatchPanel: React.FC<SemanticMatchPanelProps> = ({
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, maxChars))}
               rows={4}
-              placeholder="e.g., Final-year B.Tech in Computer Engineering from Pune University (8.3 CGPA). Completed projects in embedded Linux and real-time RTOS sensor networks. Proficient in C, C++, and Python..."
-              className="w-full p-3 text-xs sm:text-sm rounded-xl border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-600 leading-relaxed shadow-xs"
+              placeholder="e.g., Final-year B.Tech in Computer Engineering from Pune University (8.4 CGPA). Completed projects in embedded Linux and real-time RTOS sensor networks. Proficient in C, C++, and Python with coursework in computer architecture, distributed systems, and robotics control systems..."
+              className="w-full p-3 text-xs sm:text-sm border border-dashed border-stone-300 dark:border-stone-700 bg-[#faf8f5] dark:bg-stone-900 text-stone-900 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:border-stone-900 dark:focus:border-stone-100 leading-relaxed shadow-2xs font-sans"
             />
 
+            {/* Scope & Threshold Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-stone-100/60 dark:bg-stone-800/40 border border-dashed border-stone-300 dark:border-stone-700 text-xs">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer font-medium text-stone-700 dark:text-stone-300 font-sans">
+                  <input
+                    type="checkbox"
+                    checked={rankAllDatabase}
+                    onChange={(e) => setRankAllDatabase(e.target.checked)}
+                    className="rounded border-stone-300 text-stone-900 focus:ring-stone-600 w-4 h-4"
+                  />
+                  <span>Rank across all {totalDatabaseCount} catalog opportunities (override filters)</span>
+                </label>
+              </div>
+
+              {/* Threshold Filter: Min match percentage */}
+              <div className="flex items-center gap-2">
+                <span className="text-stone-500 font-medium font-sans">Min match percentage:</span>
+                <div className="flex items-center gap-1">
+                  {[0, 0.4, 0.6, 0.75].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => onThresholdChange(t)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono font-medium transition-colors cursor-pointer ${
+                        minThreshold === t
+                          ? 'bg-stone-900 text-stone-50 dark:bg-stone-100 dark:text-stone-900 shadow-2xs'
+                          : 'bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-700'
+                      }`}
+                    >
+                      {t === 0 ? 'All' : `≥${Math.round(t * 100)}%`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons: Find Opportunities */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
               <div className="flex items-center gap-2">
                 <button
                   type="submit"
                   disabled={!text.trim() || isRankingLoading}
-                  className="px-4 py-2 rounded-lg bg-emerald-700 text-white font-medium text-xs sm:text-sm hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-xs"
+                  className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 dark:bg-stone-100 dark:hover:bg-white dark:text-stone-900 font-mono text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2 cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  {isRankingLoading ? 'Ranking filtered awards...' : 'Find best matches'}
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {isRankingLoading ? 'Finding Opportunities...' : 'Find Opportunities'}
                 </button>
 
                 {isMatchingActive && (
                   <button
                     type="button"
                     onClick={handleClear}
-                    className="px-3 py-2 rounded-lg text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                    className="px-3 py-2 border border-dashed border-stone-400 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 font-mono text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <XCircle className="w-4 h-4" />
-                    Clear match
+                    <XCircle className="w-3.5 h-3.5" />
+                    Reset Match
                   </button>
                 )}
               </div>
-
-              <p className="text-[11px] text-stone-400 dark:text-stone-500 italic">
-                Demo scores are simulated. The real version uses sentence embeddings.
-              </p>
             </div>
           </form>
+
+          {/* Active Semantic Results */}
+          {isMatchingActive && stats && (
+            <div className="p-3.5 rounded-lg bg-stone-50/70 dark:bg-stone-900/70 border border-dashed border-stone-300 dark:border-stone-700 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-900 dark:text-stone-100 font-sans">
+                <span className="flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400" />
+                  Results
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+                <div className="p-2 rounded bg-stone-100/70 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800">
+                  <div className="text-[10px] text-stone-500 uppercase">Evaluated</div>
+                  <div className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                    {stats.candidates_evaluated} Opportunities
+                  </div>
+                </div>
+                <div className="p-2 rounded bg-stone-100/70 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800">
+                  <div className="text-[10px] text-stone-500 uppercase">Best Match Percentage</div>
+                  <div className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                    {Math.round(stats.top_match_score * 100)}%
+                  </div>
+                </div>
+                <div className="p-2 rounded bg-stone-100/70 dark:bg-stone-800/50 border border-stone-200 dark:border-stone-800">
+                  <div className="text-[10px] text-stone-500 uppercase">Average Match</div>
+                  <div className="font-bold text-stone-800 dark:text-stone-200 text-sm">
+                    {Math.round(stats.avg_match_score * 100)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

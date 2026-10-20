@@ -41,9 +41,39 @@ export interface SearchFilters {
   sort_by?: 'deadline' | 'recently_verified' | 'relevance';
 }
 
+export interface TermContribution {
+  term: string;
+  query_weight: number;
+  doc_weight: number;
+  contribution_percent: number;
+}
+
+export interface DimensionScores {
+  field_similarity: number;    // Study field alignment (0-1)
+  skills_similarity: number;   // Tag/technical skill alignment (0-1)
+  eligibility_fit: number;     // Eligibility & degree alignment (0-1)
+}
+
 export interface RankedResult {
   id: string;
-  similarity: number;
+  similarity: number;          // Cosine profile fit in range [0.00, 1.00]
+  raw_cosine?: number;         // Pure raw mathematical cos(θ) before calibration
+  dot_product: number;         // Vector dot product u · v
+  query_norm: number;          // ||u|| Euclidean norm
+  doc_norm: number;            // ||v|| Euclidean norm
+  matched_terms: string[];     // Key terms that contributed to overlap
+  top_contributions: TermContribution[]; // Term-by-term dot product breakdown
+  dimension_scores: DimensionScores;     // Dimensional sub-scores
+  explanation: string;         // Human-readable summary of why it matched
+}
+
+export interface SemanticEngineStats {
+  query_tokens: string[];
+  vocabulary_size: number;
+  candidates_evaluated: number;
+  top_match_score: number;
+  avg_match_score: number;
+  execution_time_ms: number;
 }
 
 export interface OpportunityInput {

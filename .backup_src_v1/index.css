@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-serif: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+}
+
+.font-serif-title {
+  font-family: var(--font-serif);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+/* Custom scrollbars for clean curated feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 140, 100, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 140, 100, 0.5);
+}
+
+/* Warm Slice-of-Life & Indus Motion Animations */
+@keyframes warm-ambient-drift {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+    opacity: 0.85;
+  }
+}
+
+@keyframes komorebi-shimmer {
+  0% {
+    opacity: 0.08;
+    transform: rotate(-15deg) translateX(-10%);
+  }
+  50% {
+    opacity: 0.16;
+    transform: rotate(-13deg) translateX(5%);
+  }
+  100% {
+    opacity: 0.08;
+    transform: rotate(-15deg) translateX(-10%);
+  }
+}
+
+@keyframes golden-sun-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 28px rgba(234, 88, 12, 0.4));
+  }
+}
+
+.animate-warm-drift {
+  animation: warm-ambient-drift 6s ease-in-out infinite;
+}
+
+.animate-komorebi {
+  animation: komorebi-shimmer 12s ease-in-out infinite;
+}
+
+.warm-golden-glow {
+  animation: golden-sun-pulse 4s ease-in-out infinite;
+}
+
+/* Warm paper texture background for slice-of-life feeling */
+.slice-of-life-canvas {
+  background-image: radial-gradient(circle at 10% 20%, rgba(254, 243, 199, 0.35) 0%, transparent 40%),
+                    radial-gradient(circle at 90% 80%, rgba(253, 230, 138, 0.25) 0%, transparent 45%);
+}
+
+.dark .slice-of-life-canvas {
+  background-image: radial-gradient(circle at 10% 20%, rgba(120, 53, 15, 0.15) 0%, transparent 40%),
+                    radial-gradient(circle at 90% 80%, rgba(67, 56, 202, 0.18) 0%, transparent 45%);
+}

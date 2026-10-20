@@ -34,10 +34,76 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(150, 150, 150, 0.3);
+  background: rgba(180, 140, 100, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(150, 150, 150, 0.5);
+  background: rgba(180, 140, 100, 0.5);
 }
+
+/* Warm Slice-of-Life & Indus Motion Animations */
+@keyframes warm-ambient-drift {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+    opacity: 0.85;
+  }
+}
+
+@keyframes komorebi-shimmer {
+  0% {
+    opacity: 0.08;
+    transform: rotate(-15deg) translateX(-10%);
+  }
+  50% {
+    opacity: 0.16;
+    transform: rotate(-13deg) translateX(5%);
+  }
+  100% {
+    opacity: 0.08;
+    transform: rotate(-15deg) translateX(-10%);
+  }
+}
+
+@keyframes golden-sun-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 28px rgba(234, 88, 12, 0.4));
+  }
+}
+
+.animate-warm-drift {
+  animation: warm-ambient-drift 6s ease-in-out infinite;
+}
+
+.animate-komorebi {
+  animation: komorebi-shimmer 12s ease-in-out infinite;
+}
+
+.warm-golden-glow {
+  animation: golden-sun-pulse 4s ease-in-out infinite;
+}
+
+/* Epoch Sarvam Playground Aesthetics */
+.epoch-canvas {
+  background-color: #faf8f5;
+  background-image: radial-gradient(rgba(28, 25, 23, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .epoch-canvas {
+  background-color: #141312;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.epoch-dashed {
+  border-style: dashed;
+}
+

@@ -40,23 +40,23 @@ export const Bookmarks: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Title & Stats */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-stone-200 dark:border-stone-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-dashed border-stone-300 dark:border-stone-800">
         <div>
-          <h1 className="font-serif-title text-3xl sm:text-4xl text-stone-900 dark:text-stone-50 font-semibold tracking-tight">
+          <h1 className="font-serif-title text-3xl sm:text-4xl text-stone-900 dark:text-stone-50 font-normal tracking-tight">
             Saved Opportunities
           </h1>
-          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 mt-1">
-            Scoped to client ID: <code className="font-mono text-[11px] bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded">{clientId.slice(0, 18)}...</code>
+          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 font-sans">
+            Personal shortlist scoped to client ID: <code className="font-mono text-[11px] bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded border border-dashed border-stone-300 dark:border-stone-700">{clientId.slice(0, 18)}...</code>
           </p>
         </div>
 
         {bookmarkItems.length > 0 && (
           <div className="flex items-center gap-2">
-            <div className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            <div className="text-xs font-mono px-3 py-1.5 border border-dashed border-stone-400 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200">
               {activeCount} Available {activeCount === 1 ? 'Program' : 'Programs'}
             </div>
             {unavailableCount > 0 && (
-              <div className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700">
+              <div className="text-xs font-mono px-3 py-1.5 border border-dashed border-stone-300 dark:border-stone-800 text-stone-500">
                 {unavailableCount} Archived
               </div>
             )}
@@ -67,25 +67,25 @@ export const Bookmarks: React.FC = () => {
       {/* Loading Skeleton */}
       {isLoading && <LoadingSkeleton count={3} />}
 
-      {/* Empty State */}
+      {/* Empty State in Epoch Style */}
       {!isLoading && bookmarkItems.length === 0 && (
         <div className="max-w-md mx-auto text-center py-16 px-4 space-y-4">
-          <div className="w-16 h-16 rounded-full bg-stone-100 dark:bg-stone-800 flex items-center justify-center mx-auto text-stone-400">
-            <Bookmark className="w-8 h-8" />
+          <div className="size-[48px] border border-dashed border-stone-300 dark:border-stone-700 bg-[#faf8f5] dark:bg-stone-900 flex items-center justify-center mx-auto text-stone-400">
+            <Bookmark className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
+          <h2 className="text-xl font-normal font-serif-title text-stone-900 dark:text-stone-100">
             No saved opportunities yet
           </h2>
-          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed">
+          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 leading-relaxed font-sans">
             As you browse long-tail fellowships and university grants, click the bookmark icon on any card to save it to this personal shortlist.
           </p>
           <div className="pt-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-stone-50 dark:bg-stone-100 dark:hover:bg-white dark:text-stone-900 font-medium text-xs font-mono transition-colors"
             >
               <Compass className="w-4 h-4" />
-              <span>Explore Opportunities</span>
+              <span>Browse Catalog</span>
             </Link>
           </div>
         </div>

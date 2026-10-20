@@ -8,7 +8,8 @@ import {
   GraduationCap,
   Banknote,
   Cpu,
-  X
+  X,
+  MapPin
 } from 'lucide-react';
 import { DegreeLevel, FundingType, SearchFilters } from '../api/types';
 import { getCountryFlag } from '../utils/format';
@@ -98,29 +99,30 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
   const sidebarContent = (
     <div className="space-y-6 text-sm">
       {/* Header with Title and Reset */}
-      <div className="flex items-center justify-between pb-3 border-b border-stone-200 dark:border-stone-800">
-        <h2 className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-          <span>Filters</span>
+      {/* Header with Title and Reset */}
+      <div className="flex items-center justify-between pb-3 border-b border-dashed border-stone-300 dark:border-stone-800">
+        <h2 className="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2 text-xs uppercase tracking-wider font-mono">
+          <span>Parameters / Filters</span>
         </h2>
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-stone-200 flex items-center gap-1 font-medium transition-colors"
+            className="text-xs text-stone-500 hover:text-stone-900 dark:hover:text-stone-200 flex items-center gap-1 font-mono transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
-            Reset all
+            Reset
           </button>
         )}
       </div>
 
-      {/* CORE THESIS: Long-tail only toggle (Default True) */}
-      <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/70">
+      {/* CORE THESIS: Long-tail only toggle (Default True) in Epoch Dashed Frame */}
+      <div className="p-3 rounded-lg border border-dashed border-stone-300 dark:border-stone-700 bg-stone-100/60 dark:bg-stone-800/40">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" />
             <label
               htmlFor="long-tail-toggle"
-              className="font-semibold text-stone-900 dark:text-stone-100 cursor-pointer select-none text-xs sm:text-sm"
+              className="font-medium text-stone-900 dark:text-stone-100 cursor-pointer select-none text-xs"
             >
               Long-Tail Only
             </label>
@@ -130,21 +132,21 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                 onMouseEnter={() => setShowTooltip(true)}
                 onMouseLeave={() => setShowTooltip(false)}
                 onClick={() => setShowTooltip(!showTooltip)}
-                className="text-emerald-600 dark:text-emerald-400 p-0.5 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                className="text-stone-500 hover:text-stone-800 dark:text-stone-400 p-0.5 rounded"
                 aria-label="What is Long-Tail Only?"
               >
-                <Info className="w-3.5 h-3.5" />
+                <Info className="w-3 h-3" />
               </button>
               {showTooltip && (
-                <div className="absolute left-0 bottom-full mb-2 w-64 p-2.5 bg-stone-900 dark:bg-stone-800 text-stone-100 text-xs rounded-lg shadow-xl z-50 pointer-events-none leading-relaxed border border-stone-700">
-                  <p className="font-semibold text-emerald-400 mb-1">Why Long-Tail Only?</p>
+                <div className="absolute left-0 bottom-full mb-2 w-64 p-2.5 bg-stone-900 dark:bg-stone-800 text-stone-100 text-xs rounded shadow-xl z-50 pointer-events-none leading-relaxed border border-stone-700 font-sans">
+                  <p className="font-semibold text-amber-400 mb-1">Why Long-Tail Only?</p>
                   Existing search engines bias toward the famous marquee programs (DAAD, Fulbright, Chevening, Erasmus Mundus). Turning this on hides them and surfaces genuine, high-value university &amp; institute scholarships with far better odds.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Toggle Switch */}
+          {/* Epoch Toggle Switch */}
           <button
             id="long-tail-toggle"
             role="switch"
@@ -155,20 +157,22 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                 long_tail_only: !(filters.long_tail_only ?? true)
               })
             }
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-600 ${
-              (filters.long_tail_only ?? true) ? 'bg-emerald-700' : 'bg-stone-300 dark:bg-stone-700'
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border border-stone-400/50 transition-colors duration-200 ease-in-out focus:outline-none ${
+              (filters.long_tail_only ?? true) ? 'bg-stone-900 dark:bg-stone-100' : 'bg-stone-300 dark:bg-stone-700'
             }`}
           >
             <span
-              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                (filters.long_tail_only ?? true) ? 'translate-x-4' : 'translate-x-0'
+              className={`pointer-events-none inline-block h-3.5 w-3.5 mt-0.5 ml-0.5 transform rounded-full shadow transition duration-200 ease-in-out ${
+                (filters.long_tail_only ?? true)
+                  ? 'translate-x-4 bg-white dark:bg-stone-900'
+                  : 'translate-x-0 bg-white dark:bg-stone-300'
               }`}
             />
           </button>
         </div>
-        <p className="text-[11px] text-stone-600 dark:text-stone-300 mt-1 leading-normal">
+        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 leading-normal font-sans">
           {(filters.long_tail_only ?? true)
-            ? 'Filtering out top 4 marquee grants. Showing high-odds university & institute awards.'
+            ? 'Filtering out marquee grants. Showing high-odds university awards.'
             : 'Showing all opportunities (including DAAD, Chevening, Fulbright, Erasmus).'}
         </p>
       </div>
@@ -206,9 +210,9 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => handleCountryToggle(country)}
-                  className="rounded border-stone-300 dark:border-stone-600 text-emerald-700 focus:ring-emerald-600 h-3.5 w-3.5"
+                  className="rounded border-stone-300 dark:border-stone-600 text-stone-900 focus:ring-stone-600 h-3.5 w-3.5"
                 />
-                <span className="text-sm">{getCountryFlag(country)}</span>
+                <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
                 <span className="text-stone-700 dark:text-stone-300 flex-1 truncate">
                   {country}
                 </span>
@@ -367,8 +371,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Sticky Sidebar */}
-      <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-20 bg-stone-50 dark:bg-stone-900/60 p-4 rounded-2xl border border-stone-200/80 dark:border-stone-800 shadow-xs">
+      {/* Desktop Sticky Sidebar in Epoch Controls Style */}
+      <aside className="hidden lg:block w-72 shrink-0 self-start sticky top-20 bg-[#faf8f5]/90 dark:bg-stone-900/60 p-4 rounded-xl border-[1.5px] border-dashed border-stone-300 dark:border-stone-800 shadow-2xs">
         {sidebarContent}
       </aside>
 

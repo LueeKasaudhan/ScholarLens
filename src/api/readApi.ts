@@ -161,13 +161,21 @@ export async function getOpportunity(id: string): Promise<Opportunity | null> {
  */
 export async function rankBySemanticMatch(
   backgroundText: string,
-  candidateIds: string[]
+  candidateIds?: string[]
 ): Promise<RankedResult[]> {
   await simulateLatency();
 
   const all = getAllOpportunitiesInternal();
-  const idSet = new Set(candidateIds);
-  const candidates = all.filter((opp) => idSet.has(opp.id));
+  let candidates: Opportunity[];
+  if (candidateIds && candidateIds.length > 0) {
+    const idSet = new Set(candidateIds);
+    candidates = all.filter((opp) => idSet.has(opp.id));
+  } else {
+    // If no candidate subset specified, rank all active opportunities
+    candidates = all.filter((opp) => opp.is_active);
+  }
 
   return rankCandidates(backgroundText, candidates);
 }
+
+export { getSemanticEngineStats } from './semanticStub';

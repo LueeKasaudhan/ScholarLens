@@ -120,3 +120,32 @@ test('adminApi allows opportunity mutations and soft delete toggles', async () =
   const publicResults = await searchOpportunities({ query: 'Test Fellowship in AI Architecture' });
   assert.equal(publicResults.some((o) => o.id === created.id), false);
 });
+
+test('Cosine Similarity algorithm computes strictly bounded similarity in [0, 1] with dot product and norms', () => {
+  const opp = INITIAL_MOCK_OPPORTUNITIES[0];
+  const candidates = [opp];
+  const query = 'optics photonics quantum sensors laser engineering physics';
+  const ranked = rankCandidates(query, candidates);
+
+  assert.equal(ranked.length, 1);
+  const result = ranked[0];
+  assert.ok(result.similarity >= 0 && result.similarity <= 1.0, `Similarity ${result.similarity} out of bounds`);
+  assert.ok(result.query_norm > 0, 'Query norm must be positive');
+  assert.ok(result.doc_norm > 0, 'Doc norm must be positive');
+  assert.ok(result.dot_product >= 0, 'Dot product must be non-negative');
+  assert.ok(result.matched_terms.length > 0, 'Must have matched terms');
+  assert.ok(result.top_contributions.length > 0, 'Must have top term contributions');
+  assert.ok(result.explanation.length > 0, 'Must provide explainable output');
+});
+
+test('Cosine Similarity algorithm returns 0 for completely disjoint orthogonal text', () => {
+  const opp = INITIAL_MOCK_OPPORTUNITIES[0];
+  const candidates = [opp];
+  const disjointQuery = 'xyzabc qwerty uiopasdfgh jklzxcvbnm';
+  const ranked = rankCandidates(disjointQuery, candidates);
+
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0].similarity, 0);
+  assert.equal(ranked[0].dot_product, 0);
+  assert.equal(ranked[0].matched_terms.length, 0);
+});

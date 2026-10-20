@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bookmark, Compass, Settings, Sun, Moon, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, Sun, Moon } from 'lucide-react';
 import { useBookmarks } from '../context/BookmarkContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -8,6 +8,7 @@ export const Navbar: React.FC = () => {
   const { count } = useBookmarks();
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
+  const [isAudioActive, setIsAudioActive] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/' && location.pathname === '/') return true;
@@ -15,73 +16,83 @@ export const Navbar: React.FC = () => {
     return false;
   };
 
+  const handleToggleSound = () => {
+    const next = !isAudioActive;
+    setIsAudioActive(next);
+    window.dispatchEvent(new CustomEvent('toggle-ambient-sound', { detail: { active: next } }));
+  };
+
   return (
-    <header className="sticky top-0 z-40 bg-stone-50/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-lg bg-emerald-700 text-stone-50 flex items-center justify-center font-bold text-lg shadow-sm group-hover:bg-emerald-800 transition-colors">
-            SL
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-stone-900 dark:text-stone-50 tracking-tight text-base sm:text-lg">
-                ScholarLens
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 rounded border border-emerald-300 dark:border-emerald-800">
-                <Sparkles className="w-2.5 h-2.5" /> Long-Tail
-              </span>
-            </div>
-            <span className="text-[11px] text-stone-500 dark:text-stone-400 font-medium hidden sm:inline-block">
-              Beyond the famous ten • Scholarships for Indian Tech Masters
-            </span>
-          </div>
+    <header className="sticky top-0 z-50 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 border-b-[1px] border-dashed border-stone-300/80 dark:border-stone-800/80 bg-[#faf8f5]/90 dark:bg-[#141312]/90 px-3 py-2.5 backdrop-blur-md md:gap-x-4 md:px-[22px] transition-colors">
+      {/* Zone 1: Left Brand / Logo (Without Playground text) */}
+      <div className="flex min-w-0 flex-nowrap items-center gap-2.5 col-start-1 justify-start">
+        <Link to="/" className="flex items-baseline gap-1.5 group select-none">
+          <span className="font-serif-title text-2xl md:text-[26px] tracking-tight text-stone-900 dark:text-stone-100 font-normal leading-none">
+            scholar<span className="font-sans font-bold text-lg md:text-xl tracking-tighter">Lens</span>
+          </span>
+        </Link>
+      </div>
+
+      {/* Zone 2: Center Segmented Tabs — ONLY Library & Saved */}
+      <nav
+        aria-label="Main Navigation"
+        className="flex w-fit justify-self-center items-center gap-0.5 md:gap-1 border-[1px] border-dashed border-stone-300/90 dark:border-stone-700/80 p-0.5 md:p-1 bg-[#faf8f5]/60 dark:bg-[#141312]/60"
+      >
+        <Link
+          to="/"
+          className={`cursor-pointer px-3.5 py-1.5 md:px-5 text-[12.5px] md:text-[13px] font-medium transition-all ${
+            isActive('/')
+              ? 'bg-stone-900 text-stone-50 dark:bg-stone-100 dark:text-stone-900 shadow-2xs'
+              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+          }`}
+        >
+          Library
         </Link>
 
-        {/* Navigation & Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            to="/"
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive('/')
-                ? 'bg-stone-200/80 dark:bg-stone-800 text-stone-900 dark:text-stone-50'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-900'
-            }`}
-          >
-            <Compass className="w-4 h-4" />
-            <span className="hidden sm:inline">Search</span>
-          </Link>
+        <Link
+          to="/bookmarks"
+          className={`cursor-pointer px-3.5 py-1.5 md:px-5 text-[12.5px] md:text-[13px] font-medium transition-all flex items-center gap-1.5 ${
+            isActive('/bookmarks')
+              ? 'bg-stone-900 text-stone-50 dark:bg-stone-100 dark:text-stone-900 shadow-2xs'
+              : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+          }`}
+        >
+          <span>Saved</span>
+          {count > 0 && (
+            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-semibold">
+              {count}
+            </span>
+          )}
+        </Link>
+      </nav>
 
-          <Link
-            to="/bookmarks"
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors relative ${
-              isActive('/bookmarks')
-                ? 'bg-stone-200/80 dark:bg-stone-800 text-stone-900 dark:text-stone-50'
-                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-900'
-            }`}
-            aria-label={`Saved opportunities (${count})`}
-          >
-            <Bookmark className="w-4 h-4" />
-            <span>Saved</span>
-            {count > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.2 text-[11px] font-bold bg-emerald-700 text-white rounded-full min-w-4 text-center">
-                {count}
-              </span>
-            )}
-          </Link>
+      {/* Zone 3: Right Controls in Epoch Square Action Button Style */}
+      <div className="flex min-w-0 flex-nowrap items-center gap-1.5 md:gap-2 col-start-3 justify-end">
+        {/* Square audio toggle */}
+        <button
+          type="button"
+          onClick={handleToggleSound}
+          className={`size-[32px] md:size-[34px] border-[1px] border-dashed border-stone-300 dark:border-stone-700 flex items-center justify-center transition-colors cursor-pointer ${
+            isAudioActive
+              ? 'bg-stone-900 dark:bg-stone-100 text-stone-50 dark:text-stone-900'
+              : 'bg-[#faf8f5] dark:bg-[#141312] text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+          }`}
+          title={isAudioActive ? 'Mute ambient wind chime' : 'Enable ambient wind chime'}
+          aria-label="Toggle ambient sound"
+        >
+          {isAudioActive ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+        </button>
 
-          <div className="h-5 w-px bg-stone-200 dark:bg-stone-800 mx-1" />
-
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-200/60 dark:hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-        </div>
+        {/* Square theme toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="size-[32px] md:size-[34px] border-[1px] border-dashed border-stone-300 dark:border-stone-700 bg-[#faf8f5] dark:bg-[#141312] text-stone-700 dark:text-stone-300 hover:text-stone-900 dark:hover:text-stone-100 flex items-center justify-center transition-colors cursor-pointer"
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5" />}
+        </button>
       </div>
     </header>
   );

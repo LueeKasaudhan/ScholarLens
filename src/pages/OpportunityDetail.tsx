@@ -13,13 +13,16 @@ import {
   Languages,
   Clock,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from 'lucide-react';
-import { getOpportunity, Opportunity } from '../api';
+import { getOpportunity, Opportunity, RankedResult } from '../api';
+import { rankCandidates } from '../api/semanticStub';
 import { DeadlineBadge } from '../components/DeadlineBadge';
 import { getCountryFlag, formatDegreeLevel, formatFundingType, formatProviderType } from '../utils/format';
 import { getDeadlineInfo } from '../utils/dates';
 import { useBookmarks } from '../context/BookmarkContext';
+import { Binary, Layers, Cpu } from 'lucide-react';
 
 export const OpportunityDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +32,16 @@ export const OpportunityDetail: React.FC = () => {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Active student profile from session storage
+  const [profileText, setProfileText] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem('scholar_lens_profile') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [semanticMatch, setSemanticMatch] = useState<RankedResult | null>(null);
 
   // Preserve previous search filter query params when navigating back
   const backToResultsUrl = `/${location.search}`;
@@ -61,6 +74,30 @@ export const OpportunityDetail: React.FC = () => {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (opportunity && profileText.trim()) {
+      const results = rankCandidates(profileText, [opportunity]);
+      if (results.length > 0) {
+        setSemanticMatch(results[0]);
+      }
+    } else {
+      setSemanticMatch(null);
+    }
+  }, [opportunity, profileText]);
+
+  const [isTesterOpen, setIsTesterOpen] = useState(false);
+  const [quickInput, setQuickInput] = useState('');
+
+  const handleApplyQuickProfile = (text: string) => {
+    setProfileText(text);
+    try {
+      sessionStorage.setItem('scholar_lens_profile', text);
+    } catch {
+      // ignore
+    }
+    setIsTesterOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -125,12 +162,12 @@ export const OpportunityDetail: React.FC = () => {
         </button>
       </div>
 
-      {/* Hero Header Card */}
-      <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-6 sm:p-8 shadow-xs space-y-4 mb-8">
+      {/* Hero Header Card in Epoch Style */}
+      <div className="rounded-xl border-[1.5px] border-dashed border-stone-300 dark:border-stone-800 bg-[#faf8f5]/90 dark:bg-stone-900/60 p-6 sm:p-8 space-y-4 mb-8">
         <div className="flex flex-wrap items-center gap-2">
           {/* Country */}
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-medium text-xs">
-            <span className="text-base">{countryFlag}</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-dashed border-stone-300 dark:border-stone-700 bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-mono text-xs">
+            <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
             <span>{opportunity.host_country}</span>
           </span>
 
@@ -192,6 +229,131 @@ export const OpportunityDetail: React.FC = () => {
           </a>
         </div>
       </div>
+
+      {/* Cosine Similarity Profile Fit Section */}
+      {semanticMatch && (
+        <div className="rounded-2xl border border-emerald-300 dark:border-emerald-800/80 bg-emerald-50/70 dark:bg-emerald-950/40 p-6 shadow-xs space-y-4 mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-200">
+              <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="font-bold text-base sm:text-lg">
+                Cosine Similarity Match: {Math.round(semanticMatch.similarity * 100)}% Profile Fit
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs px-2.5 py-1 rounded bg-stone-100 dark:bg-stone-800 text-stone-800 dark:text-stone-200 border border-dashed border-stone-300 dark:border-stone-700 font-medium">
+                {Math.round(semanticMatch.similarity * 100)}% Match
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsTesterOpen(!isTesterOpen)}
+                className="text-xs text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 font-mono transition-colors"
+              >
+                {isTesterOpen ? 'Close Studio' : 'Edit Profile'}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full bg-emerald-200/60 dark:bg-emerald-900/60 rounded-full h-2.5 overflow-hidden">
+            <div
+              className="bg-emerald-600 dark:bg-emerald-400 h-2.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(10, Math.round(semanticMatch.similarity * 100)))}%` }}
+            />
+          </div>
+
+          <p className="text-xs sm:text-sm text-emerald-950 dark:text-emerald-100 font-medium leading-relaxed">
+            {semanticMatch.explanation}
+          </p>
+
+          {/* Vector Math & Dimensions */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-emerald-200 dark:border-emerald-900/60">
+              <div className="flex items-center gap-1.5 text-stone-500 text-[11px] mb-1">
+                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Field of Study Fit</span>
+              </div>
+              <div className="text-base font-bold text-stone-900 dark:text-stone-100">
+                {Math.round(semanticMatch.dimension_scores.field_similarity * 100)}%
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-emerald-200 dark:border-emerald-900/60">
+              <div className="flex items-center gap-1.5 text-stone-500 text-[11px] mb-1">
+                <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Technical Skills Fit</span>
+              </div>
+              <div className="text-base font-bold text-stone-900 dark:text-stone-100">
+                {Math.round(semanticMatch.dimension_scores.skills_similarity * 100)}%
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-white/80 dark:bg-stone-900/80 border border-emerald-200 dark:border-emerald-900/60">
+              <div className="flex items-center gap-1.5 text-stone-500 text-[11px] mb-1">
+                <Binary className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Profile Alignment Score</span>
+              </div>
+              <div className="text-base font-bold text-stone-900 dark:text-stone-100 font-mono">
+                {semanticMatch.dot_product.toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Overlapping Keyphrases */}
+          {semanticMatch.matched_terms.length > 0 && (
+            <div className="pt-2 flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="font-semibold text-stone-600 dark:text-stone-400 text-[11px]">
+                Matched Profile Keywords:
+              </span>
+              {semanticMatch.matched_terms.map((t) => (
+                <span
+                  key={t}
+                  className="px-2 py-0.5 rounded-md bg-white dark:bg-stone-900 text-emerald-800 dark:text-emerald-300 font-mono text-[11px] border border-emerald-200 dark:border-emerald-800"
+                >
+                  +{t}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick profile tester drawer if toggled or if no profile is active */}
+      {(!semanticMatch || isTesterOpen) && (
+        <div className="rounded-2xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900/60 p-4 sm:p-5 mb-8 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-xs sm:text-sm text-stone-800 dark:text-stone-200 flex items-center gap-2">
+              <Binary className="w-4 h-4 text-emerald-600" />
+              <span>Test Your Background Against This Award</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => handleApplyQuickProfile('Final-year B.Tech in Computer Engineering from Pune University (8.4 CGPA). Focus in embedded systems, RTOS, C++, robotics.')}
+              className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline font-medium"
+            >
+              Insert sample
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={quickInput}
+              onChange={(e) => setQuickInput(e.target.value)}
+              placeholder="e.g., B.Tech in CSE, deep learning, PyTorch, computer vision, 8.8 CGPA..."
+              className="flex-1 px-3 py-2 text-xs sm:text-sm rounded-lg border border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+            />
+            <button
+              type="button"
+              onClick={() => handleApplyQuickProfile(quickInput)}
+              disabled={!quickInput.trim()}
+              className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-xs font-semibold hover:bg-emerald-800 disabled:opacity-50 transition-colors"
+            >
+              Calculate Fit
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Structured Sections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
