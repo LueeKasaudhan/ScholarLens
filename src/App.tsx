@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { BookmarkProvider } from './context/BookmarkContext';
-import { DemoDataBanner } from './components/DemoDataBanner';
 import { Navbar } from './components/Navbar';
 import { Home } from './pages/Home';
 import { OpportunityDetail } from './pages/OpportunityDetail';
@@ -15,9 +14,6 @@ export default function App() {
       <BookmarkProvider>
         <BrowserRouter>
           <div className="min-h-screen flex flex-col bg-[#faf8f5] dark:bg-[#141312] text-stone-900 dark:text-stone-100 transition-colors duration-200 epoch-canvas">
-            {/* Informational Demo Data Banner */}
-            <DemoDataBanner />
-
             {/* Navigation Header */}
             <Navbar />
 
